@@ -1,33 +1,37 @@
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
+using Serilog;
 using Signalrchat;
 
-var builder = WebApplication.CreateBuilder();
-
-// Add services to the container.
-builder.Services.AddRazorPages();
-builder.Services.AddSignalR();
-builder.Services.AddControllersWithViews();
-
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
+namespace Signalrchat
 {
-    app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
+    class Program
+    {
+        public static void Main(string[] args)
+        {
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.Console()
+                .CreateLogger();
+
+            try
+            {
+                Log.Information("Starting web host");
+                CreateHostBuilder(args).Build().Run();
+            }
+            catch (Exception ex)
+            {
+                Log.Fatal(ex, "Host terminated unexpectedly");
+            }
+            finally
+            {
+                Log.CloseAndFlush();
+            }
+        }
+
+        public static IHostBuilder CreateHostBuilder(string[] args) =>
+        Host.CreateDefaultBuilder(args)
+            .UseSerilog()
+            .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>(); });
+    }
 }
 
-app.UseHttpsRedirection();
-app.UseStaticFiles();
-
-app.UseRouting();
-
-app.UseAuthorization();
-// Add the Controller route to the request pipeline
-app.MapControllerRoute(name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
-// Map the SignalR hub to the /chat path
-app.MapHub<ChatHub>("/chat");
-app.MapRazorPages();
-
-app.Run();
