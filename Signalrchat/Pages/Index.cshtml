@@ -1,0 +1,39 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Realtime Chat Ingress Sample for AKS</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/signalr/3.1.0/signalr.min.js"></script>
+</head>
+<body>
+<div>
+    <input type="text" id="username" placeholder="Enter your username" />
+    <input type="text" id="message" placeholder="Enter your message" />
+    <button id="sendButton">Send</button>
+</div>
+<div id="chatBox"></div>
+<script>
+    var connection = new signalR.HubConnectionBuilder().withUrl("/chatHub").build();
+
+    connection.on("ReceiveMessage", function (user, message) {
+        var encodedUser = $("<div />").text(user).html();
+        var encodedMsg = $("<div />").text(message).html();
+        $("#chatBox").append("<p><strong>" + encodedUser + "</strong>: " + encodedMsg + "</p>");
+    });
+
+    $("#sendButton").click(function () {
+        var user = $("#username").val();
+        var message = $("#message").val();
+        connection.invoke("SendMessage", user, message);
+        $("#message").val("").focus();
+    });
+
+    connection.start().then(function () {
+        console.log("Connected!");
+    }).catch(function (err) {
+        console.error(err.toString());
+    });
+</script>
+</body>
+</html>
