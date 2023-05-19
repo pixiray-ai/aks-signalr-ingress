@@ -7,6 +7,7 @@
     <UserSecretsId>cc551078-8378-4221-95e4-d6cbd15adaa5</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <DockerfileContext>.</DockerfileContext>
+    <DockerfileRunArguments>-p 8080:8080 -p 443:443 -p 5000:5000</DockerfileRunArguments>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>

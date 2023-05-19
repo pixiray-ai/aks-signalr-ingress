@@ -79,7 +79,7 @@ public class Startup
                 b.AllowAnyMethod()
                     .AllowAnyHeader()
                     .AllowCredentials()
-                    .WithOrigins("http://localhost:5002");
+                    .WithOrigins("https://localhost", "https://localhost:8080", "https://localhost:5000");
             });
         });
     }
