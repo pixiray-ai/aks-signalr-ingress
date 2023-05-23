@@ -1,0 +1,27 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: signalrchat
+  labels:
+    app: signalrchat
+    group: testing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: signalrchat
+  template:
+    metadata:
+      labels:
+        app: signalrchat
+        group: testing
+    spec:
+      containers:
+        - name: signalrchat
+          image: pixiray.azurecr.io/signalrchat
+          imagePullPolicy: Always
+          ports:
+            - name: web
+              containerPort: 8080
+            - name: websocket
+              containerPort: 5000

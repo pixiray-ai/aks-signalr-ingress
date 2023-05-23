@@ -1,0 +1,19 @@
+﻿# Default values for azure-vote-front.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+kind: Service
+apiVersion: v1
+metadata:
+  name:  signalrchat-service
+spec:
+  selector:
+    app:  signalrchat
+  ports:
+  - name:  web
+    port:  8080
+    targetPort:  80
+  - name:  websocket
+    port:  5000
+    targetPort: 5000
+  sessionAffinity: ClientIP
+  type: ClusterIP
