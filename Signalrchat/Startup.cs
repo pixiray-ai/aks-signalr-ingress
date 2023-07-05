@@ -2,13 +2,15 @@ using System.Reflection;
 using Microsoft.OpenApi.Models;
 using Serilog.Extensions.Logging;
 using Serilog;
+using Microsoft.AspNetCore.HttpOverrides;
+using System.Net;
 
 namespace Signalrchat;
 
 public class Startup
 {
     public IConfiguration Configuration { get; }
-
+    readonly string MyAllowSpecificOrigins = "SignalRPolicy";
 
 
     public Startup(IConfiguration configuration)
@@ -44,16 +46,36 @@ public class Startup
     /// <param name="services"></param>
     public void ConfigureServices(IServiceCollection services)
     {
-        services.AddControllers();
-
-        services.AddRazorPages();
-        services.AddSignalR();
-        // We want to use Serilog for logging instead of the default logger.
-
         // Configure Serilog
         var logger = new LoggerConfiguration()
             .WriteTo.Console() // Configure Serilog sinks as per your requirements
             .CreateLogger();
+
+        //KNOWN PROXIES
+        string[] ips = new[] { "127.0.0.1" };
+        var envProxies = Environment.GetEnvironmentVariable("KNOWN_PROXIES");
+        logger.Information("KNOWN_PROXIES: {KNOWN_PROXIES}", envProxies);
+        if (!string.IsNullOrEmpty(envProxies))
+        {
+            ips = envProxies.Split(";");
+        }
+
+        //Configure forwarded headers and known proxies
+        services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardedHeaders =
+                ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            foreach (var ip in ips)
+            {
+                options.KnownProxies.Add(IPAddress.Parse(ip));
+                logger.Information("Information Adding proxy: {ip}", IPAddress.Parse(ip));
+            }
+        });
+
+        services.AddControllers();
+        services.AddRazorPages();
+        services.AddSignalR();
+        // We want to use Serilog for logging instead of the default logger.
 
         // Configure logging for the application
         services.AddLogging(builder =>
@@ -71,17 +93,34 @@ public class Startup
             c.IncludeXmlComments(xmlPath);
         });
 
+        // set the CORS policy - endpointroting with named policy 
+        string[] origins = new[] { "https://localhost", "https://localhost:8080", "http://localhost:5000" };
 
+        var corsOriginsEnvVar = Environment.GetEnvironmentVariable("CORS_ORIGINS");
+        if (!string.IsNullOrEmpty(corsOriginsEnvVar))
+        {
+            origins = corsOriginsEnvVar.Split(";");
+        }
+        logger.Information("CORS_ORIGINS: {CORS_ORIGINS}", origins);
+        
         services.AddCors(o =>
         {
-            o.AddDefaultPolicy(b =>
-            {
-                b.AllowAnyMethod()
-                    .AllowAnyHeader()
-                    .AllowCredentials()
-                    .WithOrigins("https://localhost", "https://localhost:8080", "https://localhost:5000");
-            });
+            //o.AddDefaultPolicy(b =>
+            //{
+            //    b.AllowAnyMethod()
+            //        .AllowAnyHeader()
+            //        .AllowCredentials()
+            //        .WithOrigins(origins);
+            //});
+            o.AddPolicy(name: MyAllowSpecificOrigins,
+                policy =>
+                {
+                    policy.WithOrigins(origins)
+                        .AllowAnyHeader()
+                        .AllowCredentials();
+                });
         });
+        
     }
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory)
@@ -92,6 +131,12 @@ public class Startup
         {
             app.UseDeveloperExceptionPage();
         }
+
+        app.UseForwardedHeaders(new ForwardedHeadersOptions
+        {
+            ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+        });
+
 
         app.UseHttpsRedirection();
 
@@ -110,8 +155,9 @@ public class Startup
 
         app.UseEndpoints(endpoints =>
         {
-            //endpoints.MapHub<ChatHub>("/chat");
-            endpoints.MapHub<ChatHub>("/chatHub");
+            //endpoints.MapControllers().RequireCors(MyAllowSpecificOrigins);
+            //endpoints.MapHub<ChatHub>("/chatHub");
+            endpoints.MapHub<ChatHub>("/chatHub").RequireCors(MyAllowSpecificOrigins);
             endpoints.MapRazorPages();
         });
     }

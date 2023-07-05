@@ -1,8 +1,10 @@
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 
 namespace Signalrchat;
 
+[EnableCors("SignalRPolicy")]
 public class ChatHub : Hub
 {
     private readonly ILogger<ChatHub> _logger;
@@ -24,5 +26,14 @@ public class ChatHub : Hub
 
         // Process the message and send it to clients
         await Clients.All.SendAsync("ReceiveMessage", user, message);
+    }
+
+    public async IAsyncEnumerable<DateTime> Stream()
+    {
+        for (int i = 0; i < 10; i++)
+        {
+            yield return DateTime.Now;
+            await Task.Delay(1000);
+        }
     }
 }
